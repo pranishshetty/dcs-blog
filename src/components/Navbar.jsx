@@ -43,7 +43,7 @@ export const Navbar = () => {
             alt="DCS Logo"
             onClick={handleSecretLogoClick}
             title={isAdmin ? 'DCS Admin' : 'DCS'}
-            style={{ width: '40px', height: '40px', cursor: 'pointer', userSelect: 'none' }}
+            style={{ width: '40px', height: '40px', objectFit: 'contain', cursor: 'pointer', userSelect: 'none' }}
           />
           <Link to="/" className="brand-logo" style={{ fontSize: '1.5rem', fontWeight: 800 }}>
             DCS
@@ -100,7 +100,7 @@ export const Navbar = () => {
           </div>
 
           <a
-            href="https://github.com"
+            href="https://github.com/pranishshetty"
             target="_blank"
             rel="noopener noreferrer"
             className="github-btn"

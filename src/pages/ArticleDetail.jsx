@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, User, Folder, Eye, Share2, Check, Link2 } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
+import { formatArticleContent } from '../utils/formatContent';
 
 export const ArticleDetail = () => {
   const { slug } = useParams();
@@ -98,10 +99,13 @@ export const ArticleDetail = () => {
               loop
               src={post.coverImage}
               className="article-cover-img"
-              style={{ width: '100%', maxHeight: '480px', objectFit: 'cover', borderRadius: '12px', backgroundColor: '#000' }}
+              style={{ width: '100%', maxHeight: '480px', objectFit: 'contain', borderRadius: '12px', backgroundColor: '#000' }}
             />
           ) : (
-            <img src={post.coverImage} alt={post.title} className="article-cover-img" />
+            <>
+              <img src={post.coverImage} alt="" className="article-cover-bg-blur" aria-hidden="true" />
+              <img src={post.coverImage} alt={post.title} className="article-cover-img" />
+            </>
           )}
         </div>
       )}
@@ -109,7 +113,7 @@ export const ArticleDetail = () => {
       {/* Render HTML / Formatted Body */}
       <div
         className="article-body"
-        dangerouslySetInnerHTML={{ __html: post.content }}
+        dangerouslySetInnerHTML={{ __html: formatArticleContent(post.content) }}
       />
 
       {/* Share Article Section */}

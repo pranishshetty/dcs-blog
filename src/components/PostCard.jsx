@@ -20,10 +20,13 @@ export const PostCard = ({ post }) => {
               loop
               muted
               playsInline
-              style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+              style={{ objectFit: 'contain', width: '100%', height: '100%', backgroundColor: '#000' }}
             />
           ) : (
-            <img src={post.coverImage} alt={post.title} className="post-card-img" />
+            <>
+              <img src={post.coverImage} alt="" className="post-card-img-blur" aria-hidden="true" />
+              <img src={post.coverImage} alt={post.title} className="post-card-img" />
+            </>
           )
         ) : (
           <div className="post-card-placeholder">
