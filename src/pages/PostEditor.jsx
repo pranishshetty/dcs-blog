@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Image, Video, Eye, Bold, Heading, Quote, Plus, Trash2, Upload } from 'lucide-react';
+import { ArrowLeft, Save, Image, Video, Eye, Bold, Heading, Quote, Plus, Trash2, Upload, Minus, List } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
+import { formatArticleContent } from '../utils/formatContent';
 
 export const PostEditor = () => {
   const { id } = useParams();
@@ -123,6 +124,8 @@ export const PostEditor = () => {
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
 
+    const formattedContent = formatArticleContent(content);
+
     const postPayload = {
       title,
       author,
@@ -131,7 +134,7 @@ export const PostEditor = () => {
       categories: selectedCategories,
       tags: tagsArray,
       excerpt,
-      content
+      content: formattedContent
     };
 
     if (isEditing) {
@@ -259,14 +262,17 @@ export const PostEditor = () => {
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Author Avatar (Upload or URL)</label>
+            <label className="form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Author Avatar (Upload or URL)</span>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>1:1 Square (e.g. 100x100px)</span>
+            </label>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="text"
                 className="form-input"
                 value={authorAvatar}
                 onChange={(e) => setAuthorAvatar(e.target.value)}
-                placeholder="Avatar URL..."
+                placeholder="Avatar URL (e.g. 100x100px square)..."
               />
               <label className="read-more-btn" style={{ cursor: 'pointer', whitespace: 'nowrap', padding: '0.5rem 0.8rem' }}>
                 {uploadingAvatar ? '...' : <Upload size={16} />}
@@ -366,33 +372,62 @@ export const PostEditor = () => {
 
         {/* Main Body Text Editor */}
         <div className="form-group">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <label className="form-label">Main Article Body (Supports HTML/Text)</label>
-            <div style={{ display: 'flex', gap: '0.35rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <label className="form-label">Main Article Body (Supports Plain Text, Markdown & HTML)</label>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <button
                 type="button"
-                className="icon-btn"
-                onClick={() => handleInsertHTML('<h2>Subheading Title</h2>')}
-                title="Insert Heading"
+                className="btn-primary"
+                onClick={() => setContent((prev) => formatArticleContent(prev))}
+                title="Automatically format pasted ChatGPT or raw text into bullet points, headings & paragraphs"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', backgroundColor: 'var(--accent-purple)', gap: '0.35rem' }}
               >
-                <Heading size={16} />
+                ✨ Auto-Format Pasted Text
               </button>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => handleInsertHTML('<p>Your text paragraph here...</p>')}
-                title="Insert Paragraph"
-              >
-                <Bold size={16} />
-              </button>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => handleInsertHTML('<blockquote>"Insert quote here"</blockquote>')}
-                title="Insert Quote"
-              >
-                <Quote size={16} />
-              </button>
+              <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => handleInsertHTML('\nIntroduction\n')}
+                  title="Insert Section Title"
+                  style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0.2rem 0.5rem' }}
+                >
+                  H2
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => handleInsertHTML('\n1. Section Subheading\n')}
+                  title="Insert Numbered Section"
+                  style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0.2rem 0.5rem' }}
+                >
+                  1. H3
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => handleInsertHTML('\n---\n')}
+                  title="Insert Section Divider Line"
+                >
+                  <Minus size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => handleInsertHTML('\n- Point item 1\n- Point item 2\n')}
+                  title="Insert Bullet List"
+                >
+                  <List size={16} />
+                </button>
+                <button
+                  type="button"
+                  className="icon-btn"
+                  onClick={() => handleInsertHTML('<blockquote>"Insert quote here"</blockquote>')}
+                  title="Insert Quote"
+                >
+                  <Quote size={16} />
+                </button>
+              </div>
             </div>
           </div>
           <textarea
