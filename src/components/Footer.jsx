@@ -4,6 +4,8 @@ import { Heart, ExternalLink, Code } from 'lucide-react';
 import dcsLogo from '../assets/dcs_logo.png';
 
 export const Footer = () => {
+  const [imgError, setImgError] = React.useState(false);
+
   return (
     <footer className="footer">
       <div className="footer-top">
@@ -43,8 +45,17 @@ export const Footer = () => {
         <div className="footer-col developer-col">
           <h4 className="footer-col-title">Developer Credit</h4>
           <div className="developer-card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <div className="dev-avatar">PS</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              {!imgError ? (
+                <img
+                  src="https://github.com/pranishshetty.png"
+                  alt="Pranish Shetty"
+                  className="dev-avatar-img"
+                  onError={() => setImgError(true)}
+                />
+              ) : (
+                <div className="dev-avatar">PS</div>
+              )}
               <div>
                 <div style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--text-primary)' }}>Pranish Shetty</div>
                 <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Lead Developer</div>
