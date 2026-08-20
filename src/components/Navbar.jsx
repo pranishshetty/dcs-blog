@@ -4,6 +4,7 @@ import { Search, Sun, Moon, LogOut, BarChart2, Shield } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useBlog } from '../context/BlogContext';
 import { useAuth } from '../context/AuthContext';
+import { LanguageTranslator } from './LanguageTranslator';
 import dcsLogo from '../assets/dcs_logo.png';
 
 export const Navbar = () => {
@@ -98,6 +99,9 @@ export const Navbar = () => {
               {theme === 'dark' ? <Moon size={13} /> : <Sun size={13} />}
             </div>
           </div>
+
+          {/* Language Translator Switcher */}
+          <LanguageTranslator />
 
           <a
             href="https://github.com/pranishshetty"

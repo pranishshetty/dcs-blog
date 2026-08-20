@@ -94,7 +94,7 @@ export const Footer = () => {
 
         <div className="footer-socials">
           <a
-            href="https://api.whatsapp.com/send?text=Check%20out%20DCS%20Blog%20https://blog.dynamiccomputerschool.com"
+            href="https://api.whatsapp.com/send?text=Check%20out%20DCS%20Blog%20https://blog.dynamicomputerschool.com"
             target="_blank"
             rel="noopener noreferrer"
             className="social-icon-btn"

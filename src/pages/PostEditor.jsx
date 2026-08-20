@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Image, Video, Eye, Bold, Heading, Quote, Plus, Trash2, Upload, Minus, List } from 'lucide-react';
+import { ArrowLeft, Save, Image, Video, Eye, Bold, Heading, Quote, Plus, Trash2, Upload, Minus, List, X } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { formatArticleContent } from '../utils/formatContent';
 
@@ -24,6 +24,12 @@ export const PostEditor = () => {
   const [newCatInput, setNewCatInput] = useState('');
   const [uploadingCover, setUploadingCover] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  // Admin Section Image Insertion states
+  const [showSectionImgModal, setShowSectionImgModal] = useState(false);
+  const [sectionImgUrl, setSectionImgUrl] = useState('');
+  const [sectionImgCaption, setSectionImgCaption] = useState('');
+  const [uploadingSectionImg, setUploadingSectionImg] = useState(false);
 
   useEffect(() => {
     if (isEditing) {
@@ -378,6 +384,15 @@ export const PostEditor = () => {
               <button
                 type="button"
                 className="btn-primary"
+                onClick={() => setShowSectionImgModal(true)}
+                title="Upload or link an image to insert into any article section"
+                style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', backgroundColor: 'var(--accent-blue)', gap: '0.35rem' }}
+              >
+                <Image size={15} /> Insert Section Image
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
                 onClick={() => setContent((prev) => formatArticleContent(prev))}
                 title="Automatically format pasted ChatGPT or raw text into bullet points, headings & paragraphs"
                 style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', backgroundColor: 'var(--accent-purple)', gap: '0.35rem' }}
@@ -450,6 +465,92 @@ export const PostEditor = () => {
           </button>
         </div>
       </form>
+
+      {/* Admin Section Image Upload Modal */}
+      {showSectionImgModal && (
+        <div className="modal-overlay" style={{ zIndex: 300 }}>
+          <div className="modal-content" style={{ maxWidth: '520px', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Image size={20} style={{ color: 'var(--accent-blue)' }} /> Insert Image into Section
+              </h3>
+              <button onClick={() => setShowSectionImgModal(false)} className="icon-btn">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label className="form-label">Upload Image File</label>
+              <label className="btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                <Upload size={16} /> {uploadingSectionImg ? 'Uploading...' : 'Choose Image File'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  disabled={uploadingSectionImg}
+                  onChange={(e) => handleFileUpload(e.target.files[0], setSectionImgUrl, setUploadingSectionImg)}
+                />
+              </label>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label className="form-label">Or Image URL</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="https://images.unsplash.com/photo-..."
+                value={sectionImgUrl}
+                onChange={(e) => setSectionImgUrl(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label">Caption / Description (Optional)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. Figure 1: Architecture diagram of the application"
+                value={sectionImgCaption}
+                onChange={(e) => setSectionImgCaption(e.target.value)}
+              />
+            </div>
+
+            {sectionImgUrl && (
+              <div style={{ marginBottom: '1.25rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Preview:</div>
+                <img
+                  src={sectionImgUrl}
+                  alt="Section preview"
+                  style={{ maxHeight: '180px', borderRadius: '8px', border: '1px solid var(--border-color)', objectFit: 'cover' }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button type="button" className="read-more-btn" onClick={() => setShowSectionImgModal(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={!sectionImgUrl}
+                onClick={() => {
+                  if (!sectionImgUrl) return;
+                  const altText = sectionImgCaption.trim() || 'Section Image';
+                  const captionHtml = sectionImgCaption.trim() ? `<figcaption>${sectionImgCaption.trim()}</figcaption>` : '';
+                  const imgBlock = `\n<figure class="article-image-block">\n  <img src="${sectionImgUrl}" alt="${altText}" />\n  ${captionHtml}\n</figure>\n`;
+                  handleInsertHTML(imgBlock);
+                  setSectionImgUrl('');
+                  setSectionImgCaption('');
+                  setShowSectionImgModal(false);
+                }}
+              >
+                Insert into Section
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

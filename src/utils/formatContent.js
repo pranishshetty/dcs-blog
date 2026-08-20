@@ -6,8 +6,8 @@
 export const formatArticleContent = (content) => {
   if (!content) return '';
 
-  // If content is already formatted structured HTML (with <p>, <h2>, <ul>, etc.), return as-is
-  const hasStructuredHtml = /<\/(p|h1|h2|h3|h4|div|ul|ol|blockquote|table|pre)>/i.test(content);
+  // If content is already formatted structured HTML (with <p>, <h2>, <ul>, <figure>, etc.), return as-is
+  const hasStructuredHtml = /<\/(p|h1|h2|h3|h4|div|ul|ol|blockquote|table|pre|figure|figcaption)>/i.test(content);
   if (hasStructuredHtml) {
     return content;
   }

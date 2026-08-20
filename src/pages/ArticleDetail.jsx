@@ -1,14 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Folder, Eye, Share2, Check, Link2 } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Folder, Eye, Share2, Check, Link2, Plus, Upload, X, Image, ShieldCheck } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
+import { useAuth } from '../context/AuthContext';
 import { formatArticleContent } from '../utils/formatContent';
 
 export const ArticleDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { posts, incrementView } = useBlog();
+  const { posts, incrementView, updatePost } = useBlog();
+  const { isAuthenticated } = useAuth();
   const [copied, setCopied] = useState(false);
+
+  // Admin Section Image Modal state
+  const [insertSectionIdx, setInsertSectionIdx] = useState(null); // null if modal closed
+  const [sectionImgUrl, setSectionImgUrl] = useState('');
+  const [sectionImgCaption, setSectionImgCaption] = useState('');
+  const [uploadingSectionImg, setUploadingSectionImg] = useState(false);
 
   const post = posts.find((p) => p.slug === slug);
 
@@ -39,6 +47,71 @@ export const ArticleDetail = () => {
     navigator.clipboard.writeText(currentUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+    setUploadingSectionImg(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload.php', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+
+      if (data.success && data.url) {
+        setSectionImgUrl(data.url);
+      } else {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setSectionImgUrl(e.target.result);
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSectionImgUrl(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingSectionImg(false);
+    }
+  };
+
+  const formattedContent = formatArticleContent(post.content);
+
+  // Split formatted HTML into section blocks (headings, paragraphs, lists, quotes, dividers)
+  const sectionBlocks = formattedContent
+    .split(/(<\/h2>|<\/h3>|<\/p>|<\/ul>|<\/blockquote>|<\/div>|<\/figure>|<hr[^>]*>)/i)
+    .reduce((acc, curr, idx, array) => {
+      if (idx % 2 === 0) {
+        const fullChunk = curr + (array[idx + 1] || '');
+        if (fullChunk.trim()) acc.push(fullChunk);
+      }
+      return acc;
+    }, []);
+
+  const handleInsertImageToSection = () => {
+    if (insertSectionIdx === null || !sectionImgUrl) return;
+
+    const altText = sectionImgCaption.trim() || 'Section Image';
+    const captionHtml = sectionImgCaption.trim() ? `<figcaption>${sectionImgCaption.trim()}</figcaption>` : '';
+    const figureHtml = `\n<figure class="article-image-block">\n  <img src="${sectionImgUrl}" alt="${altText}" />\n  ${captionHtml}\n</figure>\n`;
+
+    const updatedBlocks = [...sectionBlocks];
+    updatedBlocks.splice(insertSectionIdx + 1, 0, figureHtml);
+
+    const newContent = updatedBlocks.join('');
+    updatePost(post.id, { content: newContent });
+
+    setInsertSectionIdx(null);
+    setSectionImgUrl('');
+    setSectionImgCaption('');
   };
 
   const relatedPosts = posts
@@ -110,11 +183,71 @@ export const ArticleDetail = () => {
         </div>
       )}
 
-      {/* Render HTML / Formatted Body */}
-      <div
-        className="article-body"
-        dangerouslySetInnerHTML={{ __html: formatArticleContent(post.content) }}
-      />
+      {/* Admin Quick Help Indicator */}
+      {isAuthenticated && (
+        <div
+          style={{
+            backgroundColor: 'var(--accent-bg)',
+            border: '1px solid var(--accent-blue)',
+            borderRadius: '10px',
+            padding: '0.75rem 1.25rem',
+            marginBottom: '2rem',
+            display: 'flex',
+            alignItems: 'center',
+            justify: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.9rem', color: 'var(--accent-blue)' }}>
+            <ShieldCheck size={18} /> Admin Mode Enabled: You can insert images into any section below!
+          </div>
+          <Link to={`/admin/editor/${post.id}`} className="admin-section-insert-btn" style={{ padding: '0.35rem 0.75rem' }}>
+            Full Editor
+          </Link>
+        </div>
+      )}
+
+      {/* Render Article Sections (with Admin Insert Buttons if Authenticated) */}
+      <div className="article-body">
+        {isAuthenticated && sectionBlocks.length > 0 ? (
+          <>
+            {/* Top Insert Button before section 1 */}
+            <div className="admin-section-insert-bar">
+              <button
+                className="admin-section-insert-btn"
+                onClick={() => {
+                  setInsertSectionIdx(-1);
+                  setSectionImgUrl('');
+                  setSectionImgCaption('');
+                }}
+              >
+                <Image size={15} /> + Insert Image at Article Top
+              </button>
+            </div>
+
+            {sectionBlocks.map((blockHtml, idx) => (
+              <React.Fragment key={idx}>
+                <div dangerouslySetInnerHTML={{ __html: blockHtml }} />
+                <div className="admin-section-insert-bar">
+                  <button
+                    className="admin-section-insert-btn"
+                    onClick={() => {
+                      setInsertSectionIdx(idx);
+                      setSectionImgUrl('');
+                      setSectionImgCaption('');
+                    }}
+                  >
+                    <Image size={15} /> + Insert Image to Section #{idx + 1}
+                  </button>
+                </div>
+              </React.Fragment>
+            ))}
+          </>
+        ) : (
+          <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
+        )}
+      </div>
 
       {/* Share Article Section */}
       <div style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
@@ -122,7 +255,6 @@ export const ArticleDetail = () => {
           <Share2 size={18} style={{ color: 'var(--accent-blue)' }} /> Share This Article
         </h4>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
-          {/* WhatsApp Share Button */}
           <a
             href={`https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + currentUrl)}`}
             target="_blank"
@@ -146,7 +278,6 @@ export const ArticleDetail = () => {
             WhatsApp
           </a>
 
-          {/* Instagram Share / Link Button */}
           <a
             href={`https://www.instagram.com/`}
             target="_blank"
@@ -170,7 +301,6 @@ export const ArticleDetail = () => {
             Instagram
           </a>
 
-          {/* Copy Link Button */}
           <button
             onClick={handleCopyLink}
             className="read-more-btn"
@@ -224,6 +354,83 @@ export const ArticleDetail = () => {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Admin Modal for Inserting Image to Specific Section */}
+      {insertSectionIdx !== null && (
+        <div className="modal-overlay" style={{ zIndex: 300 }}>
+          <div className="modal-content" style={{ maxWidth: '520px', padding: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.75rem' }}>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Image size={18} style={{ color: 'var(--accent-blue)' }} /> Insert Image {insertSectionIdx === -1 ? 'at Article Top' : `after Section #${insertSectionIdx + 1}`}
+              </h3>
+              <button onClick={() => setInsertSectionIdx(null)} className="icon-btn">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label className="form-label">Upload Image File</label>
+              <label className="btn-primary" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                <Upload size={16} /> {uploadingSectionImg ? 'Uploading...' : 'Choose Image File'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  disabled={uploadingSectionImg}
+                  onChange={(e) => handleFileUpload(e.target.files[0])}
+                />
+              </label>
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1rem' }}>
+              <label className="form-label">Or Image URL</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="https://images.unsplash.com/photo-..."
+                value={sectionImgUrl}
+                onChange={(e) => setSectionImgUrl(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+              <label className="form-label">Caption / Description (Optional)</label>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="e.g. Figure: Step-by-step screenshot"
+                value={sectionImgCaption}
+                onChange={(e) => setSectionImgCaption(e.target.value)}
+              />
+            </div>
+
+            {sectionImgUrl && (
+              <div style={{ marginBottom: '1.25rem', textAlign: 'center' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>Preview:</div>
+                <img
+                  src={sectionImgUrl}
+                  alt="Section preview"
+                  style={{ maxHeight: '180px', borderRadius: '8px', border: '1px solid var(--border-color)', objectFit: 'cover' }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button type="button" className="read-more-btn" onClick={() => setInsertSectionIdx(null)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={!sectionImgUrl}
+                onClick={handleInsertImageToSection}
+              >
+                Save & Insert into Section
+              </button>
+            </div>
           </div>
         </div>
       )}

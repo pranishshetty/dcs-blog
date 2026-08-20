@@ -7,6 +7,7 @@ import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
 import { SearchModal } from './components/SearchModal';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { LanguageTranslator } from './components/LanguageTranslator';
 
 import { Home } from './pages/Home';
 import { ArticleDetail } from './pages/ArticleDetail';
@@ -66,6 +67,7 @@ export default function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </main>
+              <LanguageTranslator isFloating={true} />
               <Footer />
             </div>
           </BrowserRouter>
