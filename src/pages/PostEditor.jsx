@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Image, Video, Eye, Bold, Heading, Quote, Plus, Trash2, Upload, Minus, List, X } from 'lucide-react';
+import { ArrowLeft, Save, Image, Video, Eye, Bold, Heading, Quote, Plus, Trash2, Upload, Minus, List, X, Clock, Calendar, FileText, CheckCircle2 } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { formatArticleContent } from '../utils/formatContent';
 
@@ -19,6 +19,10 @@ export const PostEditor = () => {
   const [tagsInput, setTagsInput] = useState('React, Technology, Software');
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
+
+  // Publishing & Scheduling state: 'now' | 'schedule' | 'draft'
+  const [publishOption, setPublishOption] = useState('now');
+  const [scheduledAt, setScheduledAt] = useState('');
 
   // Category creation & media upload states
   const [newCatInput, setNewCatInput] = useState('');
@@ -43,11 +47,45 @@ export const PostEditor = () => {
         setTagsInput(existing.tags ? existing.tags.join(', ') : '');
         setExcerpt(existing.excerpt || '');
         setContent(existing.content || '');
+
+        if (existing.scheduledAt && new Date(existing.scheduledAt).getTime() > Date.now()) {
+          setPublishOption('schedule');
+          const d = new Date(existing.scheduledAt);
+          const pad = (n) => String(n).padStart(2, '0');
+          const localStr = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          setScheduledAt(localStr);
+        } else if (existing.published === false) {
+          setPublishOption('draft');
+          setScheduledAt('');
+        } else {
+          setPublishOption('now');
+          setScheduledAt('');
+        }
       }
     } else {
       setCoverImage('https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1000&auto=format&fit=crop&q=80');
     }
   }, [id, isEditing, posts]);
+
+  const setQuickSchedule = (type) => {
+    const target = new Date();
+    if (type === '1hour') {
+      target.setHours(target.getHours() + 1);
+    } else if (type === 'tomorrow9am') {
+      target.setDate(target.getDate() + 1);
+      target.setHours(9, 0, 0, 0);
+    } else if (type === 'tomorrow6pm') {
+      target.setDate(target.getDate() + 1);
+      target.setHours(18, 0, 0, 0);
+    } else if (type === 'nextweek') {
+      target.setDate(target.getDate() + 7);
+      target.setHours(9, 0, 0, 0);
+    }
+    const pad = (n) => String(n).padStart(2, '0');
+    const localStr = `${target.getFullYear()}-${pad(target.getMonth() + 1)}-${pad(target.getDate())}T${pad(target.getHours())}:${pad(target.getMinutes())}`;
+    setScheduledAt(localStr);
+    setPublishOption('schedule');
+  };
 
   const isVideoUrl = (url) => {
     if (!url) return false;
@@ -125,12 +163,29 @@ export const PostEditor = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (publishOption === 'schedule') {
+      if (!scheduledAt) {
+        alert('Please choose a scheduled date and time.');
+        return;
+      }
+      const scheduledTime = new Date(scheduledAt).getTime();
+      if (isNaN(scheduledTime) || scheduledTime <= Date.now()) {
+        alert('Please choose a future date and time to schedule this post.');
+        return;
+      }
+    }
+
     const tagsArray = tagsInput
       .split(',')
       .map((t) => t.trim())
       .filter((t) => t.length > 0);
 
     const formattedContent = formatArticleContent(content);
+
+    const isScheduled = publishOption === 'schedule';
+    const isDraft = publishOption === 'draft';
+    const scheduledIso = isScheduled ? new Date(scheduledAt).toISOString() : null;
+    const isPublished = isDraft ? false : true;
 
     const postPayload = {
       title,
@@ -140,7 +195,9 @@ export const PostEditor = () => {
       categories: selectedCategories,
       tags: tagsArray,
       excerpt,
-      content: formattedContent
+      content: formattedContent,
+      published: isPublished,
+      scheduledAt: scheduledIso
     };
 
     if (isEditing) {
@@ -455,14 +512,193 @@ export const PostEditor = () => {
           />
         </div>
 
-        {/* Submit */}
+        {/* Publishing & Scheduling Section */}
+        <div style={{
+          backgroundColor: 'var(--bg-card)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '12px',
+          padding: '1.25rem',
+          marginTop: '1.5rem',
+          marginBottom: '1rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <label className="form-label" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', fontWeight: 700 }}>
+              <Clock size={18} style={{ color: 'var(--accent-purple)' }} /> Publishing Schedule & Status
+            </label>
+            {publishOption === 'schedule' && scheduledAt && (
+              <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', borderRadius: '12px', backgroundColor: 'rgba(139, 92, 246, 0.15)', color: 'var(--accent-purple)', fontWeight: 600 }}>
+                ⏰ Scheduled
+              </span>
+            )}
+            {publishOption === 'now' && (
+              <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', borderRadius: '12px', backgroundColor: 'rgba(16, 185, 129, 0.15)', color: 'var(--accent-green)', fontWeight: 600 }}>
+                ⚡ Ready to Publish
+              </span>
+            )}
+            {publishOption === 'draft' && (
+              <span style={{ fontSize: '0.8rem', padding: '0.2rem 0.6rem', borderRadius: '12px', backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', fontWeight: 600 }}>
+                📝 Saved as Draft
+              </span>
+            )}
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+            {/* Option 1: Publish Now */}
+            <div
+              onClick={() => { setPublishOption('now'); setScheduledAt(''); }}
+              style={{
+                border: `2px solid ${publishOption === 'now' ? 'var(--accent-blue)' : 'var(--border-color)'}`,
+                backgroundColor: publishOption === 'now' ? 'var(--bg-elevated)' : 'transparent',
+                borderRadius: '10px',
+                padding: '0.9rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.95rem' }}>
+                <span style={{ color: 'var(--accent-green)' }}>⚡</span> Publish Immediately
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                Make article live for all visitors immediately upon saving.
+              </p>
+            </div>
+
+            {/* Option 2: Schedule for Later */}
+            <div
+              onClick={() => {
+                setPublishOption('schedule');
+                if (!scheduledAt) {
+                  setQuickSchedule('tomorrow9am');
+                }
+              }}
+              style={{
+                border: `2px solid ${publishOption === 'schedule' ? 'var(--accent-purple)' : 'var(--border-color)'}`,
+                backgroundColor: publishOption === 'schedule' ? 'var(--bg-elevated)' : 'transparent',
+                borderRadius: '10px',
+                padding: '0.9rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.95rem', color: 'var(--accent-purple)' }}>
+                <Clock size={16} /> Schedule for Later
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                Set a future date & time. The system will publish automatically.
+              </p>
+            </div>
+
+            {/* Option 3: Draft */}
+            <div
+              onClick={() => { setPublishOption('draft'); setScheduledAt(''); }}
+              style={{
+                border: `2px solid ${publishOption === 'draft' ? '#f59e0b' : 'var(--border-color)'}`,
+                backgroundColor: publishOption === 'draft' ? 'var(--bg-elevated)' : 'transparent',
+                borderRadius: '10px',
+                padding: '0.9rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, fontSize: '0.95rem' }}>
+                <FileText size={16} style={{ color: '#f59e0b' }} /> Save as Draft
+              </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.35rem' }}>
+                Keep article hidden from visitors until you are ready.
+              </p>
+            </div>
+          </div>
+
+          {/* Schedule Settings when "Schedule for Later" is selected */}
+          {publishOption === 'schedule' && (
+            <div style={{
+              backgroundColor: 'var(--bg-surface)',
+              border: '1px solid var(--accent-purple)',
+              borderRadius: '10px',
+              padding: '1rem',
+              marginTop: '0.75rem',
+              animation: 'fadeIn 0.2s ease'
+            }}>
+              <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                <Calendar size={15} style={{ color: 'var(--accent-purple)' }} /> Select Target Publish Date & Time
+              </label>
+
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center', marginBottom: '0.75rem' }}>
+                <input
+                  type="datetime-local"
+                  className="form-input"
+                  style={{ maxWidth: '300px', fontWeight: 600 }}
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  required={publishOption === 'schedule'}
+                />
+
+                {/* Quick Presets */}
+                <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginRight: '2px' }}>Quick Presets:</span>
+                  <button
+                    type="button"
+                    onClick={() => setQuickSchedule('1hour')}
+                    className="read-more-btn"
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    +1 Hour
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickSchedule('tomorrow9am')}
+                    className="read-more-btn"
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    Tomorrow 9 AM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickSchedule('tomorrow6pm')}
+                    className="read-more-btn"
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    Tomorrow 6 PM
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickSchedule('nextweek')}
+                    className="read-more-btn"
+                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    Next Week
+                  </button>
+                </div>
+              </div>
+
+              {scheduledAt && (
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <CheckCircle2 size={15} color="var(--accent-green)" />
+                  Will automatically publish on: <strong style={{ color: 'var(--text-primary)' }}>{new Date(scheduledAt).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}</strong>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Submit Buttons */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem' }}>
           <button type="button" className="read-more-btn" onClick={() => navigate('/admin')}>
             Cancel
           </button>
-          <button type="submit" className="btn-primary">
-            <Save size={18} /> {isEditing ? 'Update Article' : 'Publish Article'}
-          </button>
+          {publishOption === 'schedule' ? (
+            <button type="submit" className="btn-primary" style={{ backgroundColor: 'var(--accent-purple)' }}>
+              <Clock size={18} /> {isEditing ? 'Update Schedule' : 'Schedule Post'}
+            </button>
+          ) : publishOption === 'draft' ? (
+            <button type="submit" className="btn-primary" style={{ backgroundColor: '#f59e0b' }}>
+              <FileText size={18} /> {isEditing ? 'Save Draft' : 'Save as Draft'}
+            </button>
+          ) : (
+            <button type="submit" className="btn-primary">
+              <Save size={18} /> {isEditing ? 'Update & Publish' : 'Publish Article'}
+            </button>
+          )}
         </div>
       </form>
 

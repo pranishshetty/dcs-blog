@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, User, Folder, Eye, Share2, Check, Link2, Plus, Upload, X, Image, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Calendar, User, Folder, Eye, Share2, Check, Link2, Plus, Upload, X, Image, ShieldCheck, Clock } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { useAuth } from '../context/AuthContext';
 import { formatArticleContent } from '../utils/formatContent';
@@ -20,13 +20,47 @@ export const ArticleDetail = () => {
 
   const post = posts.find((p) => p.slug === slug);
 
+  const isScheduled = Boolean(post?.scheduledAt && new Date(post.scheduledAt).getTime() > Date.now());
+  const isDraft = Boolean(post && !post.published && !isScheduled);
+
   useEffect(() => {
-    if (post) {
+    if (post && post.published && !isScheduled) {
       incrementView(post.id);
     }
   }, [slug]);
 
-  if (!post) {
+  if (!post || ((isDraft || isScheduled) && !isAuthenticated)) {
+    if (post && isScheduled) {
+      return (
+        <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+          <div style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            backgroundColor: 'rgba(139, 92, 246, 0.15)',
+            color: 'var(--accent-purple)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: '1.5rem'
+          }}>
+            <Clock size={32} />
+          </div>
+          <h2 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.5rem' }}>Article Coming Soon</h2>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '520px', margin: '0 auto 1.5rem auto', lineHeight: 1.6 }}>
+            <strong>"{post.title}"</strong> is scheduled to be published on{' '}
+            <span style={{ color: 'var(--accent-purple)', fontWeight: 700 }}>
+              {new Date(post.scheduledAt).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}
+            </span>.
+            Please check back then!
+          </p>
+          <button className="btn-primary" onClick={() => navigate('/')}>
+            <ArrowLeft size={16} /> Back to Blog
+          </button>
+        </div>
+      );
+    }
+
     return (
       <div style={{ textAlign: 'center', padding: '4rem 1rem' }}>
         <h2>Article Not Found</h2>
@@ -180,6 +214,58 @@ export const ArticleDetail = () => {
               <img src={post.coverImage} alt={post.title} className="article-cover-img" />
             </>
           )}
+        </div>
+      )}
+
+      {/* Admin Scheduled Post Preview Banner */}
+      {isAuthenticated && isScheduled && (
+        <div
+          style={{
+            backgroundColor: 'rgba(139, 92, 246, 0.12)',
+            border: '1px solid var(--accent-purple)',
+            borderRadius: '12px',
+            padding: '1rem 1.25rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '1rem'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--accent-purple)' }}>
+            <Clock size={20} />
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '0.95rem' }}>Scheduled Article Preview</div>
+              <div style={{ fontSize: '0.82rem', opacity: 0.9 }}>
+                Scheduled to go live automatically on: <strong>{new Date(post.scheduledAt).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' })}</strong>. Regular readers cannot see this post yet.
+              </div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <button
+              onClick={() => {
+                if (window.confirm('Publish this article immediately now?')) {
+                  updatePost(post.id, {
+                    published: true,
+                    scheduledAt: null,
+                    date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                  });
+                }
+              }}
+              className="btn-primary"
+              style={{ backgroundColor: 'var(--accent-green)', padding: '0.4rem 0.85rem', fontSize: '0.82rem' }}
+            >
+              ⚡ Publish Now
+            </button>
+            <Link
+              to={`/admin/editor/${post.id}`}
+              className="read-more-btn"
+              style={{ padding: '0.4rem 0.85rem', fontSize: '0.82rem' }}
+            >
+              Edit Schedule
+            </Link>
+          </div>
         </div>
       )}
 

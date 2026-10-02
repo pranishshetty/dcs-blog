@@ -12,14 +12,15 @@ import {
   Cell,
   Legend
 } from 'recharts';
-import { Eye, Users, FileText, Clock, TrendingUp, Award } from 'lucide-react';
-import { useBlog } from '../context/BlogContext';
+import { Eye, Users, FileText, Clock, TrendingUp, Award, Calendar } from 'lucide-react';
+import { useBlog, getPostStatus } from '../context/BlogContext';
 
 export const AnalyticsPage = () => {
   const { posts, categories } = useBlog();
 
-  // Published posts
-  const publishedPosts = posts.filter((p) => p.published);
+  // Published & Scheduled posts
+  const publishedPosts = posts.filter((p) => getPostStatus(p) === 'published');
+  const scheduledPosts = posts.filter((p) => getPostStatus(p) === 'scheduled');
 
   // 1. Dynamic Real Total Views
   const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 0);
@@ -108,10 +109,10 @@ export const AnalyticsPage = () => {
           <div>
             <span className="stat-label">PUBLISHED POSTS</span>
             <div className="stat-val" style={{ color: 'var(--accent-purple)' }}>
-              {posts.filter(p => p.published).length}
+              {publishedPosts.length}
             </div>
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-              Active content items
+            <div style={{ fontSize: '0.8rem', color: scheduledPosts.length > 0 ? 'var(--accent-purple)' : 'var(--text-muted)' }}>
+              {scheduledPosts.length > 0 ? `+ ${scheduledPosts.length} scheduled in queue` : 'Active live content'}
             </div>
           </div>
           <div style={{ padding: '0.75rem', borderRadius: '12px', backgroundColor: 'rgba(139, 92, 246, 0.15)', color: 'var(--accent-purple)' }}>

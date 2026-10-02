@@ -47,6 +47,23 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
     $posts = getPosts($postsFile, $defaultPosts);
+    $hasChanges = false;
+    $now = time();
+
+    // Check if any scheduled posts are now due to be published
+    foreach ($posts as $idx => $p) {
+        if (!empty($p['scheduledAt']) && strtotime($p['scheduledAt']) <= $now) {
+            $posts[$idx]['published'] = true;
+            $posts[$idx]['scheduledAt'] = null;
+            $posts[$idx]['date'] = date('d M, Y');
+            $hasChanges = true;
+        }
+    }
+
+    if ($hasChanges) {
+        savePosts($postsFile, $posts);
+    }
+
     echo json_encode(["success" => true, "posts" => $posts]);
     exit();
 }
@@ -90,6 +107,7 @@ if ($method === 'POST') {
         'tags' => [],
         'date' => date('d M, Y'),
         'published' => true,
+        'scheduledAt' => null,
         'views' => 0,
         'coverImage' => '',
         'excerpt' => '',

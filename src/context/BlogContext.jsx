@@ -61,14 +61,55 @@ export const BlogProvider = ({ children }) => {
     localStorage.setItem('dcs_blog_analytics', JSON.stringify(analytics));
   }, [analytics]);
 
-  // Recalculate Category counts dynamically
+  // Recalculate Category counts dynamically for live published posts
   useEffect(() => {
     const updated = categoryNames.map((catName) => {
-      const count = posts.filter(p => p.published && p.categories && p.categories.includes(catName)).length;
+      const count = posts.filter(p => {
+        const isLive = p.published && (!p.scheduledAt || new Date(p.scheduledAt).getTime() <= Date.now());
+        return isLive && p.categories && p.categories.includes(catName);
+      }).length;
       return { name: catName, count };
     });
     setCategories(updated);
   }, [categoryNames, posts]);
+
+  // Auto-publish checker for scheduled posts whose scheduledAt has arrived
+  useEffect(() => {
+    const checkScheduledPosts = () => {
+      const now = Date.now();
+      let hasDuePosts = false;
+
+      const updated = posts.map((post) => {
+        if (post.scheduledAt && new Date(post.scheduledAt).getTime() <= now) {
+          hasDuePosts = true;
+          const livePost = {
+            ...post,
+            published: true,
+            scheduledAt: null,
+            date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+          };
+
+          // Sync publication with backend
+          fetch('/api/posts.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(livePost)
+          }).catch(() => {});
+
+          return livePost;
+        }
+        return post;
+      });
+
+      if (hasDuePosts) {
+        setPosts(updated);
+      }
+    };
+
+    checkScheduledPosts();
+    const timer = setInterval(checkScheduledPosts, 15000); // Check every 15 seconds
+    return () => clearInterval(timer);
+  }, [posts]);
 
   // Category Actions: Add and Delete
   const addCategory = (name) => {
@@ -99,9 +140,11 @@ export const BlogProvider = ({ children }) => {
     setCurrentPage(1);
   }, [activeCategory, activeTag, searchQuery]);
 
-  // Filtered posts logic
+  // Filtered posts logic - only live published posts (scheduled in the future are hidden from public)
   const filteredPosts = posts.filter((post) => {
-    if (!post.published) return false;
+    const isScheduled = post.scheduledAt && new Date(post.scheduledAt).getTime() > Date.now();
+    if (!post.published || isScheduled) return false;
+
     if (activeCategory && post.categories && !post.categories.includes(activeCategory)) return false;
     if (activeTag && post.tags && !post.tags.includes(activeTag)) return false;
     if (searchQuery.trim()) {
@@ -149,13 +192,17 @@ export const BlogProvider = ({ children }) => {
 
   // Admin Actions: Create, Edit, Delete Post
   const addPost = (newPost) => {
+    const isScheduled = Boolean(newPost.scheduledAt && new Date(newPost.scheduledAt).getTime() > Date.now());
+    const isPublished = newPost.published !== undefined ? newPost.published : !isScheduled;
+
     const created = {
       ...newPost,
       id: `post-${Date.now()}`,
       slug: newPost.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, ''),
-      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      date: newPost.date || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
       views: 0,
-      published: true
+      published: isPublished,
+      scheduledAt: newPost.scheduledAt || null
     };
     setPosts([created, ...posts]);
     setAnalytics((prev) => ({
@@ -220,12 +267,21 @@ export const BlogProvider = ({ children }) => {
         updatePost,
         deletePost,
         addCategory,
-        deleteCategory
+        deleteCategory,
+        getPostStatus
       }}
     >
       {children}
     </BlogContext.Provider>
   );
+};
+
+export const getPostStatus = (post) => {
+  if (!post) return 'draft';
+  if (post.scheduledAt && new Date(post.scheduledAt).getTime() > Date.now()) {
+    return 'scheduled';
+  }
+  return post.published ? 'published' : 'draft';
 };
 
 export const useBlog = () => useContext(BlogContext);
