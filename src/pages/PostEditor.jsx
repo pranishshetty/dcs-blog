@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Save, Image, Video, Eye, Bold, Heading, Quote, Plus, Trash2, Upload, Minus, List, X, Clock, Calendar, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Save, Image, Video, Eye, Bold, Heading, Quote, Plus, Trash2, Upload, Minus, List, X, Clock, Calendar, FileText, CheckCircle2, Sparkles } from 'lucide-react';
 import { useBlog } from '../context/BlogContext';
 import { formatArticleContent } from '../utils/formatContent';
+import { RichTextEditor } from '../components/RichTextEditor';
 
 export const PostEditor = () => {
   const { id } = useParams();
@@ -158,6 +159,21 @@ export const PostEditor = () => {
 
   const handleInsertHTML = (snippet) => {
     setContent((prev) => prev + '\n' + snippet);
+  };
+
+  const handleAutoGenerateExcerpt = () => {
+    if (!content) return;
+    const plain = content.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!plain) return;
+    const sentences = plain.match(/[^.!?]+[.!?]+/g);
+    let summary = '';
+    if (sentences && sentences.length > 0) {
+      summary = (sentences[0] + (sentences[1] ? ' ' + sentences[1] : '')).trim();
+      if (summary.length > 220) summary = summary.substring(0, 220) + '...';
+    } else {
+      summary = plain.substring(0, 180) + '...';
+    }
+    setExcerpt(summary);
   };
 
   const handleSubmit = (e) => {
@@ -420,95 +436,39 @@ export const PostEditor = () => {
           />
         </div>
 
-        {/* Short Summary Excerpt */}
+        {/* Short Summary Excerpt / Teaser Description */}
         <div className="form-group">
-          <label className="form-label">Teaser Excerpt Summary</label>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <label className="form-label" style={{ marginBottom: 0 }}>
+              Article Description / Teaser Summary
+            </label>
+            <button
+              type="button"
+              className="read-more-btn"
+              onClick={handleAutoGenerateExcerpt}
+              title="Automatically generate a clean 2-sentence summary from the article content without any code"
+              style={{ fontSize: '0.8rem', padding: '0.25rem 0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', color: 'var(--accent-purple)', borderColor: 'var(--accent-purple)' }}
+            >
+              <Sparkles size={14} /> Auto-Generate Summary
+            </button>
+          </div>
           <textarea
             className="form-textarea"
             rows={3}
-            placeholder="Brief 2-3 sentence overview shown on post cards..."
+            placeholder="Write a brief 2-3 sentence overview shown on post cards (plain text - no coding needed!)..."
             value={excerpt}
             onChange={(e) => setExcerpt(e.target.value)}
             required
           />
         </div>
 
-        {/* Main Body Text Editor */}
+        {/* Main Body Visual Rich Text Editor */}
         <div className="form-group">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
-            <label className="form-label">Main Article Body (Supports Plain Text, Markdown & HTML)</label>
-            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => setShowSectionImgModal(true)}
-                title="Upload or link an image to insert into any article section"
-                style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', backgroundColor: 'var(--accent-blue)', gap: '0.35rem' }}
-              >
-                <Image size={15} /> Insert Section Image
-              </button>
-              <button
-                type="button"
-                className="btn-primary"
-                onClick={() => setContent((prev) => formatArticleContent(prev))}
-                title="Automatically format pasted ChatGPT or raw text into bullet points, headings & paragraphs"
-                style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', backgroundColor: 'var(--accent-purple)', gap: '0.35rem' }}
-              >
-                ✨ Auto-Format Pasted Text
-              </button>
-              <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                <button
-                  type="button"
-                  className="icon-btn"
-                  onClick={() => handleInsertHTML('\nIntroduction\n')}
-                  title="Insert Section Title"
-                  style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0.2rem 0.5rem' }}
-                >
-                  H2
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn"
-                  onClick={() => handleInsertHTML('\n1. Section Subheading\n')}
-                  title="Insert Numbered Section"
-                  style={{ fontSize: '0.8rem', fontWeight: 700, padding: '0.2rem 0.5rem' }}
-                >
-                  1. H3
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn"
-                  onClick={() => handleInsertHTML('\n---\n')}
-                  title="Insert Section Divider Line"
-                >
-                  <Minus size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn"
-                  onClick={() => handleInsertHTML('\n- Point item 1\n- Point item 2\n')}
-                  title="Insert Bullet List"
-                >
-                  <List size={16} />
-                </button>
-                <button
-                  type="button"
-                  className="icon-btn"
-                  onClick={() => handleInsertHTML('<blockquote>"Insert quote here"</blockquote>')}
-                  title="Insert Quote"
-                >
-                  <Quote size={16} />
-                </button>
-              </div>
-            </div>
-          </div>
-          <textarea
-            className="form-textarea"
-            rows={10}
-            placeholder="Write full article body..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
+          <label className="form-label">Main Article Body & Content</label>
+          <RichTextEditor
+            content={content}
+            onChange={setContent}
+            onOpenImageModal={() => setShowSectionImgModal(true)}
           />
         </div>
 
@@ -774,8 +734,8 @@ export const PostEditor = () => {
                   if (!sectionImgUrl) return;
                   const altText = sectionImgCaption.trim() || 'Section Image';
                   const captionHtml = sectionImgCaption.trim() ? `<figcaption>${sectionImgCaption.trim()}</figcaption>` : '';
-                  const imgBlock = `\n<figure class="article-image-block">\n  <img src="${sectionImgUrl}" alt="${altText}" />\n  ${captionHtml}\n</figure>\n`;
-                  handleInsertHTML(imgBlock);
+                  const imgBlock = `<figure class="article-image-block"><img src="${sectionImgUrl}" alt="${altText}" />${captionHtml}</figure><p><br></p>`;
+                  setContent((prev) => (prev ? prev + imgBlock : imgBlock));
                   setSectionImgUrl('');
                   setSectionImgCaption('');
                   setShowSectionImgModal(false);
