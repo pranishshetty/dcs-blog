@@ -3,10 +3,20 @@ import { initialPosts, initialCategories, initialTags, initialAnalytics } from '
 
 const BlogContext = createContext();
 
+const filterCleanPosts = (rawList) => {
+  if (!Array.isArray(rawList)) return [];
+  return rawList.filter((p) => {
+    const title = (p.title || '').trim().toLowerCase();
+    const slug = (p.slug || '').trim().toLowerCase();
+    return title !== 'untitled' && slug !== 'untitled' && title.length > 0;
+  });
+};
+
 export const BlogProvider = ({ children }) => {
   const [posts, setPosts] = useState(() => {
     const saved = localStorage.getItem('dcs_blog_posts');
-    return saved ? JSON.parse(saved) : initialPosts;
+    const parsed = saved ? JSON.parse(saved) : initialPosts;
+    return filterCleanPosts(parsed);
   });
 
   const [categoryNames, setCategoryNames] = useState(() => {
@@ -34,7 +44,7 @@ export const BlogProvider = ({ children }) => {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.posts) && data.posts.length > 0) {
-          setPosts(data.posts);
+          setPosts(filterCleanPosts(data.posts));
         }
       })
       .catch(() => {});
@@ -164,8 +174,31 @@ export const BlogProvider = ({ children }) => {
     currentPage * postsPerPage
   );
 
-  // Increment view count when article opened & sync with backend server
+  // Increment view count when article opened & sync with backend server (Strict: One device one view only)
   const incrementView = (postId) => {
+    if (!postId) return;
+
+    // Strict One Device One View Only Policy
+    const viewedKey = 'dcs_viewed_articles';
+    let viewedList = [];
+    try {
+      const stored = localStorage.getItem(viewedKey);
+      viewedList = stored ? JSON.parse(stored) : [];
+      if (!Array.isArray(viewedList)) viewedList = [];
+    } catch (e) {
+      viewedList = [];
+    }
+
+    if (viewedList.includes(postId)) {
+      // This device has already counted a view for this article
+      return;
+    }
+
+    // Save this article as viewed on this device
+    try {
+      localStorage.setItem(viewedKey, JSON.stringify([...viewedList, postId]));
+    } catch (e) {}
+
     setPosts((prevPosts) =>
       prevPosts.map((p) => {
         if (p.id === postId) {
@@ -186,12 +219,16 @@ export const BlogProvider = ({ children }) => {
 
     setAnalytics((prev) => ({
       ...prev,
-      totalViews: prev.totalViews + 1
+      totalViews: (prev.totalViews || 0) + 1
     }));
   };
 
   // Admin Actions: Create, Edit, Delete Post
   const addPost = (newPost) => {
+    if (!newPost.title || newPost.title.trim().toLowerCase() === 'untitled') {
+      return null;
+    }
+
     const isScheduled = Boolean(newPost.scheduledAt && new Date(newPost.scheduledAt).getTime() > Date.now());
     const isPublished = newPost.published !== undefined ? newPost.published : !isScheduled;
 

@@ -24,10 +24,10 @@ export const ArticleDetail = () => {
   const isDraft = Boolean(post && !post.published && !isScheduled);
 
   useEffect(() => {
-    if (post && post.published && !isScheduled) {
+    if (post && post.published && !isScheduled && !isAuthenticated) {
       incrementView(post.id);
     }
-  }, [slug]);
+  }, [slug, isAuthenticated]);
 
   if (!post || ((isDraft || isScheduled) && !isAuthenticated)) {
     if (post && isScheduled) {

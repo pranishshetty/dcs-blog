@@ -179,6 +179,11 @@ export const PostEditor = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (!title.trim() || title.trim().toLowerCase() === 'untitled') {
+      alert('Please enter a title for the article before saving.');
+      return;
+    }
+
     if (publishOption === 'schedule') {
       if (!scheduledAt) {
         alert('Please choose a scheduled date and time.');

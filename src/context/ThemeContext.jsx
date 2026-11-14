@@ -4,7 +4,13 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('dcs_blog_theme') || 'dark';
+    const migrated = localStorage.getItem('dcs_theme_day_default_v1');
+    if (!migrated) {
+      localStorage.setItem('dcs_theme_day_default_v1', 'true');
+      localStorage.setItem('dcs_blog_theme', 'light');
+      return 'light';
+    }
+    return localStorage.getItem('dcs_blog_theme') || 'light';
   });
 
   useEffect(() => {

@@ -50,7 +50,20 @@ if ($method === 'GET') {
     $hasChanges = false;
     $now = time();
 
-    // Check if any scheduled posts are now due to be published
+    // 1. Permanently purge any 'untitled' or blank posts
+    $cleaned = [];
+    foreach ($posts as $p) {
+        $title = strtolower(trim($p['title'] ?? ''));
+        $slug = strtolower(trim($p['slug'] ?? ''));
+        if ($title === 'untitled' || $slug === 'untitled' || empty($title)) {
+            $hasChanges = true;
+            continue;
+        }
+        $cleaned[] = $p;
+    }
+    $posts = $cleaned;
+
+    // 2. Check if any scheduled posts are now due to be published
     foreach ($posts as $idx => $p) {
         if (!empty($p['scheduledAt']) && strtotime($p['scheduledAt']) <= $now) {
             $posts[$idx]['published'] = true;
@@ -92,14 +105,21 @@ if ($method === 'POST') {
             exit();
         }
     }
+
+    // Validate title - prevent blank or untitled articles
+    $postTitle = trim($input['title'] ?? '');
+    if (empty($postTitle) || strtolower($postTitle) === 'untitled') {
+        echo json_encode(["success" => false, "message" => "Article title is required."]);
+        exit();
+    }
     
     // Create new post
     $newId = isset($input['id']) ? $input['id'] : 'post-' . time();
-    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $input['title'] ?? 'untitled')));
+    $slug = strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', $postTitle)));
     
     $newPost = array_merge([
         'id' => $newId,
-        'title' => 'Untitled',
+        'title' => $postTitle,
         'slug' => $slug,
         'author' => 'Admin',
         'authorAvatar' => '',
