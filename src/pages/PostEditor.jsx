@@ -13,8 +13,8 @@ export const PostEditor = () => {
   const isEditing = Boolean(id);
 
   const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('John Doe');
-  const [authorAvatar, setAuthorAvatar] = useState('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80');
+  const [author, setAuthor] = useState('Deepak Prajapati');
+  const [authorAvatar, setAuthorAvatar] = useState('/deepak_prajapati.jpg');
   const [coverImage, setCoverImage] = useState('');
   const [selectedCategories, setSelectedCategories] = useState(['Application']);
   const [tagsInput, setTagsInput] = useState('React, Technology, Software');
@@ -41,8 +41,8 @@ export const PostEditor = () => {
       const existing = posts.find((p) => p.id === id);
       if (existing) {
         setTitle(existing.title || '');
-        setAuthor(existing.author || 'John Doe');
-        setAuthorAvatar(existing.authorAvatar || '');
+        setAuthor(existing.author || 'Deepak Prajapati');
+        setAuthorAvatar(existing.authorAvatar || '/deepak_prajapati.jpg');
         setCoverImage(existing.coverImage || '');
         setSelectedCategories(existing.categories || ['Application']);
         setTagsInput(existing.tags ? existing.tags.join(', ') : '');
@@ -350,15 +350,30 @@ export const PostEditor = () => {
               <span>Author Avatar (Upload or URL)</span>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>1:1 Square (e.g. 100x100px)</span>
             </label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+              {authorAvatar && (
+                <img
+                  src={authorAvatar}
+                  alt="Avatar Preview"
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '2px solid var(--accent-blue)',
+                    flexShrink: 0
+                  }}
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              )}
               <input
                 type="text"
                 className="form-input"
                 value={authorAvatar}
                 onChange={(e) => setAuthorAvatar(e.target.value)}
-                placeholder="Avatar URL (e.g. 100x100px square)..."
+                placeholder="Avatar URL or Upload image..."
               />
-              <label className="read-more-btn" style={{ cursor: 'pointer', whitespace: 'nowrap', padding: '0.5rem 0.8rem' }}>
+              <label className="read-more-btn" style={{ cursor: 'pointer', whitespace: 'nowrap', padding: '0.5rem 0.8rem' }} title="Upload Avatar Photo">
                 {uploadingAvatar ? '...' : <Upload size={16} />}
                 <input
                   type="file"

@@ -104,12 +104,12 @@ export const Navbar = () => {
           <LanguageTranslator />
 
           <a
-            href="https://github.com/pranishshetty"
+            href="https://dynamicomputerschool.com"
             target="_blank"
             rel="noopener noreferrer"
             className="github-btn"
           >
-            Github
+            DCS Site
           </a>
 
           {/* Logout button ONLY shown if admin is logged in */}

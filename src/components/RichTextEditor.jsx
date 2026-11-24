@@ -19,7 +19,12 @@ import {
   Sparkles,
   Eye,
   Code,
-  Edit3
+  Edit3,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Table
 } from 'lucide-react';
 import { formatArticleContent } from '../utils/formatContent';
 
@@ -27,6 +32,10 @@ export const RichTextEditor = ({ content, onChange, onOpenImageModal }) => {
   const [mode, setMode] = useState('visual'); // 'visual' | 'code' | 'preview'
   const editorRef = useRef(null);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [tableRows, setTableRows] = useState(3);
+  const [tableCols, setTableCols] = useState(3);
+  const [tableWithHeader, setTableWithHeader] = useState(true);
 
   // Sync content from outside into the contentEditable div when mounting or switching modes
   useEffect(() => {
@@ -36,6 +45,38 @@ export const RichTextEditor = ({ content, onChange, onOpenImageModal }) => {
       }
     }
   }, [mode]);
+
+  const handleInsertTable = () => {
+    let html = `<div class="table-responsive-wrapper"><table class="article-table">`;
+    if (tableWithHeader) {
+      html += '<thead><tr>';
+      for (let c = 1; c <= tableCols; c++) {
+        html += `<th>Header ${c}</th>`;
+      }
+      html += '</tr></thead>';
+    }
+    html += '<tbody>';
+    for (let r = 1; r <= tableRows; r++) {
+      html += '<tr>';
+      for (let c = 1; c <= tableCols; c++) {
+        html += `<td>Data ${r}-${c}</td>`;
+      }
+      html += '</tr>';
+    }
+    html += '</tbody></table></div><p><br></p>';
+
+    if (editorRef.current && mode === 'visual') {
+      editorRef.current.focus();
+      const success = document.execCommand('insertHTML', false, html);
+      if (!success) {
+        editorRef.current.innerHTML += html;
+      }
+      handleInput();
+    } else {
+      onChange((content || '') + html);
+    }
+    setShowTableModal(false);
+  };
 
   // Execute standard formatting commands
   const executeCmd = (command, value = null) => {
@@ -141,6 +182,14 @@ export const RichTextEditor = ({ content, onChange, onOpenImageModal }) => {
             <button
               type="button"
               className="rich-toolbar-btn"
+              onClick={() => handleInsertHeading('h1')}
+              title="Main Title Heading (H1)"
+            >
+              <Heading1 size={16} /> <span className="btn-label">H1</span>
+            </button>
+            <button
+              type="button"
+              className="rich-toolbar-btn"
               onClick={() => handleInsertHeading('h2')}
               title="Large Section Heading (H2)"
             >
@@ -199,6 +248,44 @@ export const RichTextEditor = ({ content, onChange, onOpenImageModal }) => {
               title="Strikethrough"
             >
               <Strikethrough size={16} />
+            </button>
+          </div>
+
+          <div className="rich-toolbar-divider" />
+
+          {/* Text Alignment */}
+          <div className="rich-toolbar-group">
+            <button
+              type="button"
+              className="rich-toolbar-btn"
+              onClick={() => executeCmd('justifyLeft')}
+              title="Align Left"
+            >
+              <AlignLeft size={16} />
+            </button>
+            <button
+              type="button"
+              className="rich-toolbar-btn"
+              onClick={() => executeCmd('justifyCenter')}
+              title="Align Center"
+            >
+              <AlignCenter size={16} />
+            </button>
+            <button
+              type="button"
+              className="rich-toolbar-btn"
+              onClick={() => executeCmd('justifyRight')}
+              title="Align Right"
+            >
+              <AlignRight size={16} />
+            </button>
+            <button
+              type="button"
+              className="rich-toolbar-btn"
+              onClick={() => executeCmd('justifyFull')}
+              title="Justify Text"
+            >
+              <AlignJustify size={16} />
             </button>
           </div>
 
@@ -302,6 +389,77 @@ export const RichTextEditor = ({ content, onChange, onOpenImageModal }) => {
             >
               <ImageIcon size={16} /> <span className="btn-label">Insert Image</span>
             </button>
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className="rich-toolbar-btn insert-table-btn"
+                onClick={() => setShowTableModal(!showTableModal)}
+                title="Insert Responsive Table"
+              >
+                <Table size={16} /> <span className="btn-label">Table</span>
+              </button>
+
+              {showTableModal && (
+                <div className="table-dropdown-modal">
+                  <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.6rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text-primary)' }}>
+                    <span>Insert Table</span>
+                    <button
+                      type="button"
+                      onClick={() => setShowTableModal(false)}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', lineHeight: 1 }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Rows</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="20"
+                        value={tableRows}
+                        onChange={(e) => setTableRows(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="form-input"
+                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.2rem' }}>Columns</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={tableCols}
+                        onChange={(e) => setTableCols(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="form-input"
+                        style={{ padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
+                      />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.75rem' }}>
+                    <input
+                      type="checkbox"
+                      id="table-header-check"
+                      checked={tableWithHeader}
+                      onChange={(e) => setTableWithHeader(e.target.checked)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <label htmlFor="table-header-check" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                      Include Header Row
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    style={{ width: '100%', padding: '0.4rem', fontSize: '0.82rem', justifyContent: 'center' }}
+                    onClick={handleInsertTable}
+                  >
+                    Insert Table
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="rich-toolbar-divider" />

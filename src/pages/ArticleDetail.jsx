@@ -119,9 +119,9 @@ export const ArticleDetail = () => {
 
   const formattedContent = formatArticleContent(post.content);
 
-  // Split formatted HTML into section blocks (headings, paragraphs, lists, quotes, dividers)
+  // Split formatted HTML into section blocks (headings, paragraphs, lists, tables, quotes, dividers)
   const sectionBlocks = formattedContent
-    .split(/(<\/h2>|<\/h3>|<\/p>|<\/ul>|<\/blockquote>|<\/div>|<\/figure>|<hr[^>]*>)/i)
+    .split(/(<\/h1>|<\/h2>|<\/h3>|<\/p>|<\/ul>|<\/ol>|<\/table>|<\/blockquote>|<\/div>|<\/figure>|<hr[^>]*>)/i)
     .reduce((acc, curr, idx, array) => {
       if (idx % 2 === 0) {
         const fullChunk = curr + (array[idx + 1] || '');

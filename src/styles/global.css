@@ -728,6 +728,15 @@ input, textarea, select {
     margin-bottom: 1.5rem;
   }
 
+  h1, .article-h1 {
+    color: var(--text-primary);
+    font-size: 2.2rem;
+    font-weight: 800;
+    margin: 2.8rem 0 1.2rem 0;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+  }
+
   h2, .article-h2 {
     color: var(--text-primary);
     font-size: 1.8rem;
@@ -829,6 +838,76 @@ input, textarea, select {
     li strong {
       color: var(--accent-blue);
     }
+  }
+
+  ol {
+    margin: 1.25rem 0 1.75rem 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+
+    li {
+      line-height: 1.65;
+      padding-left: 0.25rem;
+    }
+  }
+
+  /* Responsive Blog Content Tables */
+  .table-responsive-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    margin: 2rem 0;
+    border-radius: 10px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table, .article-table {
+    width: 100%;
+    margin: 1.5rem 0;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+    background-color: var(--bg-card);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+  }
+
+  table th, .article-table th {
+    background-color: var(--bg-card-hover);
+    color: var(--text-primary);
+    font-weight: 700;
+    text-align: left;
+    padding: 0.85rem 1.1rem;
+    border: 1px solid var(--border-color);
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  table td, .article-table td {
+    padding: 0.85rem 1.1rem;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+  }
+
+  table tr:hover td, .article-table tr:hover td {
+    background-color: var(--bg-card-hover);
+  }
+
+  /* Alignment inside article content */
+  [align="center"], [style*="text-align: center"], [style*="text-align:center"] {
+    text-align: center !important;
+  }
+
+  [align="right"], [style*="text-align: right"], [style*="text-align:right"] {
+    text-align: right !important;
+  }
+
+  [align="left"], [style*="text-align: left"], [style*="text-align:left"] {
+    text-align: left !important;
+  }
+
+  [align="justify"], [style*="text-align: justify"], [style*="text-align:justify"] {
+    text-align: justify !important;
   }
 
   img {
@@ -1794,6 +1873,32 @@ iframe.goog-te-banner-frame {
 .insert-img-btn:hover {
   background-color: var(--accent-blue);
   color: #ffffff;
+}
+
+.insert-table-btn {
+  background-color: rgba(16, 185, 129, 0.15);
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  font-weight: 700;
+}
+
+.insert-table-btn:hover {
+  background-color: var(--accent-green);
+  color: #ffffff;
+}
+
+.table-dropdown-modal {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 0.4rem;
+  background-color: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.85rem;
+  width: 220px;
+  box-shadow: var(--shadow-lg);
+  z-index: 60;
 }
 
 .color-picker-dropdown {

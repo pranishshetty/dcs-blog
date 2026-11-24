@@ -51,11 +51,21 @@ export const formatArticleContent = (content) => {
       return;
     }
 
-    // Detect Markdown headings (# Heading or ## Heading)
+    // Detect Markdown headings (# Heading for H1, ## Heading for H2, ### for H3)
     if (/^#{1,6}\s+/.test(trimmed)) {
-      const headingText = trimmed.replace(/^#{1,6}\s+/, '');
-      formattedBlocks.push(`<h2 class="article-h2">${headingText}</h2>`);
-      return;
+      const match = trimmed.match(/^(#{1,6})\s+(.*)$/);
+      if (match) {
+        const hashes = match[1].length;
+        const headingText = match[2];
+        if (hashes === 1) {
+          formattedBlocks.push(`<h1 class="article-h1">${headingText}</h1>`);
+        } else if (hashes === 2) {
+          formattedBlocks.push(`<h2 class="article-h2">${headingText}</h2>`);
+        } else {
+          formattedBlocks.push(`<h3 class="article-h3">${headingText}</h3>`);
+        }
+        return;
+      }
     }
 
     // Detect Section Titles (e.g., "My recommendation", "If you're building a simple photo gallery...", "For a large-scale app:")

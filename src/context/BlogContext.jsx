@@ -5,11 +5,22 @@ const BlogContext = createContext();
 
 const filterCleanPosts = (rawList) => {
   if (!Array.isArray(rawList)) return [];
-  return rawList.filter((p) => {
-    const title = (p.title || '').trim().toLowerCase();
-    const slug = (p.slug || '').trim().toLowerCase();
-    return title !== 'untitled' && slug !== 'untitled' && title.length > 0;
-  });
+  return rawList
+    .filter((p) => {
+      const title = (p.title || '').trim().toLowerCase();
+      const slug = (p.slug || '').trim().toLowerCase();
+      return title !== 'untitled' && slug !== 'untitled' && title.length > 0;
+    })
+    .map((p) => {
+      if (p.author === 'John Doe' || !p.author) {
+        return {
+          ...p,
+          author: 'Deepak Prajapati',
+          authorAvatar: p.authorAvatar && !p.authorAvatar.includes('photo-1535713875002') ? p.authorAvatar : '/deepak_prajapati.jpg'
+        };
+      }
+      return p;
+    });
 };
 
 export const BlogProvider = ({ children }) => {
