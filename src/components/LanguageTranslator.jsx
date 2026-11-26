@@ -227,6 +227,7 @@ export const LanguageTranslator = ({ isFloating = false }) => {
           <span className="lang-name-label">
             {activeLangObj.code === 'en' ? 'English' : `${activeLangObj.native} (${activeLangObj.code.toUpperCase()})`}
           </span>
+          <span className="mobile-lang-code">{activeLangObj.code.toUpperCase()}</span>
         </button>
       )}
 
